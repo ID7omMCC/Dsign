@@ -13,10 +13,11 @@ jobs:
 
       - name: Install zsign Dependency
         run: |
-          brew install openssl
+          brew install openssl@3
           git clone https://github.com/zhlynn/zsign.git
           cd zsign
-          g++ *.cpp -o zsign -lcrypto -O3
+          # تجميع zsign باستخدام مسارات OpenSSL الصحيحة على macOS
+          c++ *.cpp -o zsign -O3 -I/opt/homebrew/opt/openssl@3/include -L/opt/homebrew/opt/openssl@3/lib -lcrypto
           sudo mv zsign /usr/local/bin/
           zsign -v
 
@@ -26,63 +27,21 @@ jobs:
           rm -rf Payload Dsign.ipa
           mkdir -p Payload/Dsign.app
           
-          cat << 'EOF' > dsign_main.m
-          #import <UIKit/UIKit.h>
-
-          @interface HomeViewController : UIViewController
-          @end
-
-          @implementation HomeViewController
-          - (void)viewDidLoad {
-              [super viewDidLoad];
-              self.view.backgroundColor = [UIColor colorWithRed:0.07 green:0.07 blue:0.09 alpha:1.0];
-              self.title = @"Dsign Engine";
-              
-              UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(20, 150, self.view.bounds.size.width - 40, 60)];
-              label.text = @"⚡ Dsign Signing Hub";
-              label.textColor = [UIColor systemOrangeColor];
-              label.font = [UIFont boldSystemFontOfSize:24];
-              label.textAlignment = NSTextAlignmentCenter;
-              [self.view addSubview:label];
-          }
-          @end
-
-          @interface AppDelegate : UIResponder <UIApplicationDelegate>
-          @property (strong, nonatomic) UIWindow *window;
-          @end
-
-          @implementation AppDelegate
-          - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-              self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-              HomeViewController *vc = [[HomeViewController alloc] init];
-              UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
-              self.window.rootViewController = nav;
-              [self.window makeKeyAndVisible];
-              return YES;
-          }
-          @end
-
-          int main(int argc, char * argv[]) {
-              @autoreleasepool {
-                  return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
-              }
-          }
-          EOF
-
+          # تجميع ملف الواجهات المصدري dsign_main.m
           xcrun -sdk iphoneos clang -arch arm64 -fobjc-arc dsign_main.m \
             -o Payload/Dsign.app/Dsign \
             -framework UIKit -framework Foundation -framework CoreGraphics
 
           chmod +x Payload/Dsign.app/Dsign
-          rm -f dsign_main.m
 
+          # إنشاء ملف Info.plist الأساسي للتطبيق
           cat << 'EOF' > Payload/Dsign.app/Info.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
               <key>CFBundleIdentifier</key>
-              <string>com.dsign.engine</string>
+              <string>com.dsign.cert.app</string>
               <key>CFBundleName</key>
               <string>Dsign</string>
               <key>CFBundleExecutable</key>
@@ -104,5 +63,5 @@ jobs:
       - name: Upload Dsign IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Dsign-Engine-IPA
+          name: Dsign-IPA
           path: Dsign.ipa
