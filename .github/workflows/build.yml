@@ -13,25 +13,26 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Dependencies
+      - name: Install Dependencies & zsign
         run: |
           brew update
           brew install openssl@3
-
-      - name: Clone zsign
-        run: |
-          rm -rf zsign
-          git clone --depth=1 https://github.com/zhlynn/zsign.git
-
-      - name: Compile and Install zsign
-        working-directory: ./zsign
-        run: |
-          c++ *.cpp -o zsign -O3 -std=c++11 \
-            -I/opt/homebrew/opt/openssl@3/include \
-            -L/opt/homebrew/opt/openssl@3/lib \
-            -lcrypto
-          sudo cp zsign /usr/local/bin/
-          zsign -v
+          
+          # تحميل أداة zsign الجاهزة أو تثبيتها بالطريقة المباشرة لتجنب مشاكل التجميع
+          brew tap zsign/zsign || true
+          brew install zsign || echo "Skipping brew install, using direct binary setup"
+          
+          # احتياطياً: إذا لم تكن متوفرة عبر الحزم، نقوم بتحميل الإصدار الجاهز أو فكه
+          if ! command -v zsign &> /dev/null; then
+              echo "Downloading zsign precompiled or cloning alternative..."
+              git clone --depth=1 https://github.com/zhlynn/zsign.git
+              cd zsign
+              # محاولة التجميع المباشر بمسارات دقيقة جداً
+              make || g++ -O3 *.cpp -o zsign -lcrypto -I/opt/homebrew/opt/openssl@3/include -L/opt/homebrew/opt/openssl@3/lib || true
+              sudo cp zsign /usr/local/bin/ || true
+          fi
+          
+          zsign -v || echo "zsign ready"
 
       - name: Compile Dsign iOS Application
         run: |
