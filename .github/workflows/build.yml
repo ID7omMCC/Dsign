@@ -10,14 +10,13 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        
-     - name: Install zsign Dependency
+
+      - name: Install zsign Dependency
         run: |
           brew install openssl@3
           rm -rf zsign
           git clone https://github.com/zhlynn/zsign.git
           cd zsign
-          # التأكد من الدخول للمجلد وتنفيذ التجميع بمسارات OpenSSL الصحيحة
           c++ *.cpp -o zsign -O3 -I/opt/homebrew/opt/openssl@3/include -L/opt/homebrew/opt/openssl@3/lib -lcrypto
           sudo mv zsign /usr/local/bin/
           zsign -v
@@ -28,14 +27,12 @@ jobs:
           rm -rf Payload Dsign.ipa
           mkdir -p Payload/Dsign.app
           
-          # تجميع ملف الواجهات المصدري dsign_main.m
           xcrun -sdk iphoneos clang -arch arm64 -fobjc-arc dsign_main.m \
             -o Payload/Dsign.app/Dsign \
             -framework UIKit -framework Foundation -framework CoreGraphics
 
           chmod +x Payload/Dsign.app/Dsign
 
-          # إنشاء ملف Info.plist الأساسي للتطبيق
           cat << 'EOF' > Payload/Dsign.app/Info.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
