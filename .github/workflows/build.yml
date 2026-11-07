@@ -11,12 +11,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install zsign Dependency
+     - name: Install zsign Dependency
         run: |
           brew install openssl@3
+          rm -rf zsign
           git clone https://github.com/zhlynn/zsign.git
           cd zsign
-          # تجميع zsign باستخدام مسارات OpenSSL الصحيحة على macOS
+          # التأكد من الدخول للمجلد وتنفيذ التجميع بمسارات OpenSSL الصحيحة
           c++ *.cpp -o zsign -O3 -I/opt/homebrew/opt/openssl@3/include -L/opt/homebrew/opt/openssl@3/lib -lcrypto
           sudo mv zsign /usr/local/bin/
           zsign -v
