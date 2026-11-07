@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
+        
      - name: Install zsign Dependency
         run: |
           brew install openssl@3
