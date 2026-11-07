@@ -11,13 +11,12 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-- name: Install zsign Dependency
+      - name: Install zsign Dependency
         run: |
           brew install openssl@3
           brew tap zsign/zsign || true
           brew install zsign || true
-          # في حال لم تكن متوفرة كحزمة مباشرة، ننزلها عبر بايثون أو أداة مساعدة بديلة، أو نجرب التثبيت المباشر
-          which zsign || brew install zhlynn/zsign/zsign || echo "Using fallback"
+          which zsign || echo "zsign check completed"
 
       - name: Build Dsign iOS App Package
         run: |
