@@ -1,4 +1,4 @@
-name: Build Dsign IPA Signing Engine
+name: Build Dsign Ultimate Engine
 
 on:
   push:
@@ -11,25 +11,39 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install zsign Dependency
+      - name: Setup Ultimate Environment & zsign
         run: |
+          echo "=== 1. Updating Homebrew & Installing OpenSSL == "
+          brew update
           brew install openssl@3
-          brew tap zsign/zsign || true
-          brew install zsign || true
-          which zsign || echo "zsign check completed"
+          
+          echo "=== 2. Cloning & Building zsign Engine (Strict Mode) ==="
+          git clone --depth=1 https://github.com/zhlynn/zsign.git
+          cd zsign
+          # تجميع أداة zsign بأقصى تحسينات وأعلى توافقية مع مسارات OpenSSL@3
+          c++ *.cpp -o zsign -O3 -std=c++11 \
+            -I/opt/homebrew/opt/openssl@3/include \
+            -L/opt/homebrew/opt/openssl@3/lib \
+            -lcrypto
+          
+          sudo cp zsign /usr/local/bin/
+          zsign -v
+          cd ..
 
-      - name: Build Dsign iOS App Package
+      - name: Compile Dsign iOS Application
         run: |
           set -e
           rm -rf Payload Dsign.ipa
           mkdir -p Payload/Dsign.app
           
+          echo "=== 3. Compiling Objective-C Binary ==="
           xcrun -sdk iphoneos clang -arch arm64 -fobjc-arc dsign_main.m \
             -o Payload/Dsign.app/Dsign \
             -framework UIKit -framework Foundation -framework CoreGraphics
 
           chmod +x Payload/Dsign.app/Dsign
 
+          echo "=== 4. Generating App Manifest & Metadata ==="
           cat << 'EOF' > Payload/Dsign.app/Info.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -53,10 +67,11 @@ jobs:
           </plist>
           EOF
 
+          echo "=== 5. Packaging Ultimate IPA ==="
           zip -r Dsign.ipa Payload
 
-      - name: Upload Dsign IPA Artifact
+      - name: Upload Verified IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Dsign-IPA
+          name: Dsign-Ultimate-IPA
           path: Dsign.ipa
