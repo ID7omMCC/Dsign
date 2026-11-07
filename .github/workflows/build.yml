@@ -14,10 +14,9 @@ jobs:
       - name: Install zsign Dependency
         run: |
           brew install openssl@3
-          rm -rf zsign
           git clone https://github.com/zhlynn/zsign.git
           cd zsign
-          c++ *.cpp -o zsign -O3 -I/opt/homebrew/opt/openssl@3/include -L/opt/homebrew/opt/openssl@3/lib -lcrypto
+          clang++ -std=c++11 main.cpp bundle.cpp macho.cpp openssl.cpp common.cpp json.cpp -o zsign -O3 -I/opt/homebrew/opt/openssl@3/include -L/opt/homebrew/opt/openssl@3/lib -lcrypto
           sudo mv zsign /usr/local/bin/
           zsign -v
 
