@@ -1,27 +1,18 @@
-name: Build Dsign Ultimate Engine
-
-on:
-  push:
-    branches: [ main, master ]
-
-jobs:
-  build:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Ultimate Environment & zsign
+- name: Setup Ultimate Environment & zsign
         run: |
           echo "=== 1. Updating Homebrew & Installing OpenSSL == "
           brew update
           brew install openssl@3
           
           echo "=== 2. Cloning & Building zsign Engine (Strict Mode) ==="
+          rm -rf zsign
           git clone --depth=1 https://github.com/zhlynn/zsign.git
+          
+          # الدخول الإجباري للمجلد الناجح
           cd zsign
-          # تجميع أداة zsign بأقصى تحسينات وأعلى توافقية مع مسارات OpenSSL@3
-          c++ *.cpp -o zsign -O3 -std=c++11 \
+          
+          # التجميع المباشر بتحديد أسماء الملفات لضمان عدم فشل الـ wildcard
+          c++ main.cpp bundle.cpp macho.cpp openssl.cpp common.cpp json.cpp -o zsign -O3 -std=c++11 \
             -I/opt/homebrew/opt/openssl@3/include \
             -L/opt/homebrew/opt/openssl@3/lib \
             -lcrypto
@@ -29,49 +20,3 @@ jobs:
           sudo cp zsign /usr/local/bin/
           zsign -v
           cd ..
-
-      - name: Compile Dsign iOS Application
-        run: |
-          set -e
-          rm -rf Payload Dsign.ipa
-          mkdir -p Payload/Dsign.app
-          
-          echo "=== 3. Compiling Objective-C Binary ==="
-          xcrun -sdk iphoneos clang -arch arm64 -fobjc-arc dsign_main.m \
-            -o Payload/Dsign.app/Dsign \
-            -framework UIKit -framework Foundation -framework CoreGraphics
-
-          chmod +x Payload/Dsign.app/Dsign
-
-          echo "=== 4. Generating App Manifest & Metadata ==="
-          cat << 'EOF' > Payload/Dsign.app/Info.plist
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>CFBundleIdentifier</key>
-              <string>com.dsign.cert.app</string>
-              <key>CFBundleName</key>
-              <string>Dsign</string>
-              <key>CFBundleExecutable</key>
-              <string>Dsign</string>
-              <key>CFBundleVersion</key>
-              <string>1.0</string>
-              <key>CFBundleShortVersionString</key>
-              <string>1.0</string>
-              <key>LSRequiresIPhoneOS</key>
-              <true/>
-              <key>MinimumOSVersion</key>
-              <string>15.0</string>
-          </dict>
-          </plist>
-          EOF
-
-          echo "=== 5. Packaging Ultimate IPA ==="
-          zip -r Dsign.ipa Payload
-
-      - name: Upload Verified IPA Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Dsign-Ultimate-IPA
-          path: Dsign.ipa
