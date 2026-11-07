@@ -1,55 +1,39 @@
-name: Build Dsign App
+#import <UIKit/UIKit.h>
 
-on:
-  push:
-    branches: [ main, master ]
+@interface HomeViewController : UIViewController
+@end
 
-jobs:
-  build:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+@implementation HomeViewController
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.view.backgroundColor = [UIColor colorWithRed:0.06 green:0.06 blue:0.08 alpha:1.0];
+    self.title = @"Dsign Hub";
+    
+    UILabel *header = [[UILabel alloc] initWithFrame:CGRectMake(20, 100, self.view.bounds.size.width - 40, 40)];
+    header.text = @"⚡ Dsign Enterprise Engine";
+    header.textColor = [UIColor systemOrangeColor];
+    header.font = [UIFont boldSystemFontOfSize:22];
+    [self.view addSubview:header];
+}
+@end
 
-      - name: Compile Dsign App
-        run: |
-          set -e
-          rm -rf Payload Dsign.ipa
-          mkdir -p Payload/Dsign.app
-          
-          # تجميع ملف الكود المصدري dsign_main.m
-          xcrun -sdk iphoneos clang -arch arm64 -fobjc-arc dsign_main.m \
-            -o Payload/Dsign.app/Dsign \
-            -framework UIKit -framework Foundation -framework CoreGraphics
+@interface AppDelegate : UIResponder <UIApplicationDelegate>
+@property (strong, nonatomic) UIWindow *window;
+@end
 
-          chmod +x Payload/Dsign.app/Dsign
+@implementation AppDelegate
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    HomeViewController *vc = [[HomeViewController alloc] init];
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
+    self.window.rootViewController = nav;
+    [self.window makeKeyAndVisible];
+    return YES;
+}
+@end
 
-          # إنشاء ملف Info.plist الأساسي للتطبيق
-          cat << 'EOF' > Payload/Dsign.app/Info.plist
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>CFBundleIdentifier</key>
-              <string>com.dsign.cert.app</string>
-              <key>CFBundleName</key>
-              <string>Dsign</string>
-              <key>CFBundleExecutable</key>
-              <string>Dsign</string>
-              <key>CFBundleVersion</key>
-              <string>1.0</string>
-              <key>LSRequiresIPhoneOS</key>
-              <true/>
-              <key>MinimumOSVersion</key>
-              <string>15.0</string>
-          </dict>
-          </plist>
-          EOF
-
-          zip -r Dsign.ipa Payload
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Dsign-IPA
-          path: Dsign.ipa
+int main(int argc, char * argv[]) {
+    @autoreleasepool {
+        return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
+    }
+}
